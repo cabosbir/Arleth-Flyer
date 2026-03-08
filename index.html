@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Flyer Editor - Currency Calculator</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f0f0f0;
+        }
+
+        .flyer-container {
+            background: white;
+            width: 8.5in;
+            min-height: 11in;
+            margin: 20px auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .hero-image-section {
+            position: relative;
+            height: 500px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .logo img { height: 48px; }
+
+        .content-section {
+            padding: 25px 30px 10px 30px;
+        }
+
+        .interior-image {
+            width: 100%;
+            height: 185px;
+            object-fit: cover;
+            object-position: center;
+            border-radius: 8px;
+        }
+
+        .amenities-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 30px 8px 30px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 10px;
+            gap: 60px;
+        }
+
+        .amenity-item { text-align: center; color: #4b5563; }
+        .amenity-icon { font-size: 22px; color: #1e3a8a; margin-bottom: 3px; }
+        .amenity-value { font-size: 22px; font-weight: 700; color: #1e3a8a; margin-bottom: 1px; }
+        .amenity-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.2px; color: #6b7280; margin-top: 2px; }
+        .amenity-name { font-size: 8px; color: #9ca3af; margin-top: 4px; text-transform: none; letter-spacing: 0; }
+
+        .footer-note {
+            background: #1e3a8a;
+            color: white;
+            padding: 10px 20px;
+            font-size: 9px;
+            text-align: center;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .edit-field {
+            border: 1px dashed #cbd5e1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .edit-field:focus { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+        .edit-field-white { color: white; }
+        .edit-field-dark { color: #1f2937; }
+
+        .image-upload-btn {
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: block;
+            background: #f3f4f6;
+        }
+        .image-upload-btn img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+
+        .upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .image-upload-btn:hover .upload-overlay { opacity: 1; }
+        .drag-over { border: 3px dashed #3b82f6 !important; background: rgba(59, 130, 246, 0.1) !important; }
+        .drag-over .upload-overlay { opacity: 1 !important; background: rgba(59, 130, 246, 0.2) !important; }
+
+
+        /* ===== CONTROL PANEL ===== */
+        .controls-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            width: 240px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .controls-panel::-webkit-scrollbar { width: 8px; }
+        .controls-panel::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .controls-panel::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .controls-panel::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .btn { padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; width: 100%; margin-bottom: 8px; font-size: 13px; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary { background: #10b981; color: white; }
+        .btn-secondary:hover { background: #059669; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .currency-dropdown {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            padding: 3px 6px;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .currency-dropdown option { background: #1e3a8a; color: white; font-size: 11px; }
+        .converted-price-display { font-size: 14px; text-align: right; color: white; min-width: 120px; font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif; }
+
+        @media print {
+            .controls-panel { display: none; }
+            .flyer-container { box-shadow: none; margin: 0; }
+            .edit-field { border: none; }
+            .remove-icon-btn { display: none !important; }
+            .upload-overlay { display: none !important; }
+            .currency-dropdown { -webkit-appearance: none; -moz-appearance: none; appearance: none; background: transparent !important; border: none !important; }
+        }
+
+        .clean-view .edit-field { border: none !important; background: transparent !important; pointer-events: none; }
+        .clean-view .remove-icon-btn { display: none !important; }
+        .clean-view .upload-overlay { display: none !important; }
+        .clean-view input, .clean-view textarea { overflow: visible !important; text-overflow: clip !important; }
+        .clean-view .character-counter { display: none !important; }
+        .clean-view .currency-dropdown { pointer-events: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: transparent !important; border: none !important; }
+
+        .unit-overview-section { background: #f9fafb; padding: 12px; border-radius: 8px; width: 100%; max-width: 100%; box-sizing: border-box; }
+        .unit-overview-section textarea { width: 100%; max-width: 100%; box-sizing: border-box; }
+        textarea.edit-field { resize: vertical; min-height: 80px; font-family: 'Montserrat', sans-serif; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+
+        .features-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb; }
+        .feature-icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .feature-icon-item { position: relative; background: #f3f4f6; border: 2px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .feature-icon-item:hover { background: #e5e7eb; border-color: #3b82f6; }
+        .feature-icon-item.add-icon { background: #eff6ff; border: 2px dashed #3b82f6; color: #3b82f6; }
+        .feature-icon-item.add-icon:hover { background: #dbeafe; }
+        .feature-icon-display { font-size: 24px; margin-bottom: 4px; }
+        .feature-icon-label { font-size: 9px; color: #6b7280; text-transform: uppercase; }
+
+        .remove-icon-btn { position: absolute; top: -6px; right: -6px; background: #3b82f6; color: white; border: 2px solid white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; z-index: 10; transition: all 0.2s; }
+        .remove-icon-btn:hover { background: #2563eb; transform: scale(1.1); }
+        .amenity-item .remove-icon-btn { background: #3b82f6; }
+        .amenity-item .remove-icon-btn:hover { background: #2563eb; }
+        .feature-icon-item .remove-icon-btn { background: #ef4444; }
+        .feature-icon-item .remove-icon-btn:hover { background: #dc2626; }
+
+        .icon-selector-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .icon-selector-content { background: white; border-radius: 12px; padding: 20px; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+        .icon-option { display: flex; align-items: center; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 5px; }
+        .icon-option:hover { background: #f3f4f6; }
+        .icon-option i { font-size: 24px; margin-right: 15px; color: #3b82f6; }
+
+        .collapsible-section { margin-bottom: 12px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+        .collapsible-header { background: #f9fafb; padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
+        .collapsible-header:hover { background: #f3f4f6; }
+        .collapsible-header-title { font-size: 12px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 6px; }
+        .collapsible-header-icon { font-size: 10px; color: #6b7280; transition: transform 0.2s; }
+        .collapsible-header-icon.open { transform: rotate(180deg); }
+        .collapsible-content { padding: 12px; background: white; }
+
+        .autosave-indicator { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 8px 16px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 12px; display: flex; align-items: center; gap: 8px; z-index: 1001; transition: all 0.3s; }
+        .autosave-indicator.saving { background: #fef3c7; color: #92400e; }
+        .autosave-indicator.saved { background: #d1fae5; color: #065f46; }
+        .autosave-indicator.error { background: #fee2e2; color: #991b1b; }
+
+        .qr-code-container { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        #qr-code { display: flex; justify-content: center; padding: 10px; background: white; border-radius: 8px; }
+        #qr-code canvas { max-width: 100% !important; height: auto !important; }
+        #qr-code-flyer { display: flex; justify-content: center; align-items: center; }
+        #qr-code-flyer canvas { max-width: 60px !important; max-height: 60px !important; height: auto !important; width: auto !important; }
+
+        .shortcuts-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .shortcuts-content { background: white; border-radius: 12px; padding: 24px; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .shortcut-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .shortcut-key { background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; font-weight: 600; }
+
+        .preset-item { background: #f9fafb; padding: 8px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+        .preset-item:hover { background: #f3f4f6; }
+        .preset-actions { display: flex; gap: 4px; }
+        .preset-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
+        .preset-btn:hover { background: #e5e7eb; }
+
+        .history-controls { display: flex; gap: 6px; margin-bottom: 12px; }
+        .history-btn { flex: 1; padding: 6px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+        .batch-export-progress { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 2001; min-width: 300px; }
+        .progress-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-top: 12px; }
+        .progress-bar-fill { height: 100%; background: #3b82f6; transition: width 0.3s; }
+
+        .color-preset-grid { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scroll-behavior: smooth; }
+        .color-preset-grid::-webkit-scrollbar { height: 6px; }
+        .color-preset-grid::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        .color-preset-grid::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .color-preset-grid::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .color-preset-btn { padding: 8px; border-radius: 6px; border: 2px solid #e5e7eb; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; background: white; min-width: 60px; flex-shrink: 0; }
+        .color-preset-btn:hover { border-color: #3b82f6; transform: scale(1.05); }
+        .color-preview-box { width: 100%; height: 30px; border-radius: 4px; }
+        .color-preset-label { font-size: 9px; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+
+        .color-input-group { margin-bottom: 10px; }
+        .color-input-label { font-size: 10px; font-weight: 600; color: #4b5563; margin-bottom: 4px; display: block; }
+        .color-input-wrapper { display: flex; gap: 8px; align-items: center; }
+        .color-picker-input { width: 50px; height: 35px; border: 2px solid #e5e7eb; border-radius: 6px; cursor: pointer; padding: 2px; }
+        .color-hex-input { flex: 1; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 11px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Clear old autosave versions
+        const oldKeys = ['flyer-autosave', 'flyer-autosave-v2'];
+        oldKeys.forEach(key => { if (localStorage.getItem(key)) localStorage.removeItem(key); });
+        
+        const { useState, useRef, useEffect, useCallback } = React;
+
+        // ===== AUTO-SAVE HOOK =====
+        function useAutoSave(data, delay = 2000) {
+            const [saveStatus, setSaveStatus] = useState('saved');
+            const timeoutRef = useRef(null);
+            useEffect(() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                setSaveStatus('saving');
+                timeoutRef.current = setTimeout(() => {
+                    try {
+                        localStorage.setItem('flyer-autosave-v3', JSON.stringify({ data, timestamp: Date.now() }));
+                        setSaveStatus('saved');
+                    } catch (error) { setSaveStatus('error'); }
+                }, delay);
+                return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+            }, [data, delay]);
+            return saveStatus;
+        }
+
+        // ===== UNDO/REDO HOOK =====
+        function useHistory(initialState) {
+            const [index, setIndex] = useState(0);
+            const [history, setHistory] = useState([initialState]);
+            const setState = useCallback((newState) => {
+                setHistory(prev => {
+                    const newHistory = prev.slice(0, index + 1);
+                    newHistory.push(newState);
+                    if (newHistory.length > 50) { newHistory.shift(); return newHistory; }
+                    return newHistory;
+                });
+                setIndex(prev => Math.min(prev + 1, 49));
+            }, [index]);
+            const undo = useCallback(() => { if (index > 0) setIndex(index - 1); }, [index]);
+            const redo = useCallback(() => { if (index < history.length - 1) setIndex(index + 1); }, [index, history.length]);
+            return { state: history[index], setState, undo, redo, canUndo: index > 0, canRedo: index < history.length - 1 };
+        }
+
+        function PropertyFlyerEditor() {
+            const exchangeRates = {
+                'USD': { rate: 1, symbol: '$', name: 'US Dollar' },
+                'MXN': { rate: 20.0, symbol: '$', name: 'Mexican Peso' },
+                'CAD': { rate: 1.35, symbol: '$', name: 'Canadian Dollar' },
+                'EUR': { rate: 0.92, symbol: '€', name: 'Euro' },
+                'GBP': { rate: 0.79, symbol: '£', name: 'British Pound' },
+                'JPY': { rate: 149.50, symbol: '¥', name: 'Japanese Yen' },
+                'AUD': { rate: 1.52, symbol: '$', name: 'Australian Dollar' },
+                'CHF': { rate: 0.88, symbol: 'Fr', name: 'Swiss Franc' },
+                'CNY': { rate: 7.24, symbol: '¥', name: 'Chinese Yuan' }
+            };
+
+            const initialData = {
+                mls: '24-2325',
+                address: '60, BAHIA DEL TEZAL',
+                priceUSD: '289,000',
+                selectedCurrency: 'MXN',
+                size: '986.69',
+                yearBuilt: '2017',
+                overview: 'This unit completely updated with new kitchen and updated furniture. Great ocean views from the patio.',
+                location: 'Cabo Corridor',
+                bedrooms: '2',
+                fullBaths: '2',
+                halfBaths: '0',
+                garageSpaces: '2',
+                swimmingPools: '1',
+                heroImage: null,
+                logo: 'https://res.cloudinary.com/dhwnr1pa5/image/upload/v1764006077/a-minimalist-logo-design-featuring-the-t_9cojZE3oRBuMZlMFIjIOXg_qBjTM8MbRgWWLNQ2svGVzA-removebg-preview_vha7wz.png',
+                logoHeight: 80,
+                logoWidth: 80,
+                image1: null,
+                image2: null,
+                image3: null,
+                image4: null,
+                qrCodeUrl: '',
+                qrCodeLabel: 'Scan Listing',
+                colorScheme: { primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' }
+            };
+
+            const loadAutoSave = () => {
+                try {
+                    const saved = localStorage.getItem('flyer-autosave-v3');
+                    if (saved) {
+                        const { data, timestamp } = JSON.parse(saved);
+                        if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                            return { ...initialData, ...data, colorScheme: data.colorScheme || initialData.colorScheme, selectedCurrency: data.selectedCurrency || 'MXN' };
+                        }
+                    }
+                } catch (e) {}
+                return initialData;
+            };
+
+            const { state: propertyData, setState: setPropertyData, undo, redo, canUndo, canRedo } = useHistory(loadAutoSave());
+            const [customFeatures, setCustomFeatures] = useState([]);
+            const [showIconSelector, setShowIconSelector] = useState(false);
+            const [amenityIcons, setAmenityIcons] = useState([
+                { id: 'bedrooms', icon: 'fa-bed', label: 'Bedrooms', value: '2' },
+                { id: 'fullBaths', icon: 'fa-bath', label: 'Full Baths', value: '2' },
+                { id: 'halfBaths', icon: 'fa-toilet', label: '½ Bath', value: '0' },
+                { id: 'garageSpaces', icon: 'fa-car', label: 'Garage Space', value: '2' },
+                { id: 'swimmingPools', icon: 'fa-swimming-pool', label: 'Swimming Pool', value: '1' }
+            ]);
+            const [showAmenityIconSelector, setShowAmenityIconSelector] = useState(false);
+            const [editingAmenityIndex, setEditingAmenityIndex] = useState(null);
+            const [isCleanView, setIsCleanView] = useState(false);
+            const [expandedSections, setExpandedSections] = useState({ logo: true, export: true, features: false, qr: false, presets: false, colors: true });
+            const [showShortcuts, setShowShortcuts] = useState(false);
+            const [presets, setPresets] = useState([]);
+            const [batchExporting, setBatchExporting] = useState(false);
+            const [batchProgress, setBatchProgress] = useState(0);
+            const flyerRef = useRef(null);
+            const draggingRef = useRef(null);
+
+            const saveStatus = useAutoSave(propertyData);
+
+            const colorPresets = [
+                { name: 'Blue', primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' },
+                { name: 'Red', primary: '#991b1b', secondary: '#dc2626', gradientStart: '#ef4444', gradientEnd: '#dc2626' },
+                { name: 'Green', primary: '#065f46', secondary: '#059669', gradientStart: '#10b981', gradientEnd: '#059669' },
+                { name: 'Orange', primary: '#9a3412', secondary: '#ea580c', gradientStart: '#f97316', gradientEnd: '#ea580c' },
+                { name: 'Teal', primary: '#115e59', secondary: '#0f766e', gradientStart: '#14b8a6', gradientEnd: '#0f766e' },
+                { name: 'Yellow', primary: '#a16207', secondary: '#ca8a04', gradientStart: '#fbbf24', gradientEnd: '#f59e0b' },
+                { name: 'Black', primary: '#0f172a', secondary: '#1e293b', gradientStart: '#334155', gradientEnd: '#1e293b' },
+                { name: 'Pink', primary: '#be123c', secondary: '#e11d48', gradientStart: '#f43f5e', gradientEnd: '#e11d48' }
+            ];
+            // ===== EXISTING FUNCTIONS =====
+            const applyColorPreset = (preset) => setPropertyData({ ...propertyData, colorScheme: { primary: preset.primary, secondary: preset.secondary, gradientStart: preset.gradientStart, gradientEnd: preset.gradientEnd } });
+            const updateColor = (colorType, value) => setPropertyData({ ...propertyData, colorScheme: { ...propertyData.colorScheme, [colorType]: value } });
+
+            const calculateConvertedPrice = () => {
+                if (!propertyData.priceUSD || !propertyData.selectedCurrency) return '';
+                try {
+                    const usdAmount = parseFloat(propertyData.priceUSD.replace(/,/g, ''));
+                    if (isNaN(usdAmount)) return '';
+                    const rate = exchangeRates[propertyData.selectedCurrency].rate;
+                    return (usdAmount * rate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                } catch { return ''; }
+            };
+
+            const convertedPrice = calculateConvertedPrice();
+            const currencyInfo = exchangeRates[propertyData.selectedCurrency || 'MXN'];
+
+            const availableIcons = [
+                { icon: 'fa-wifi', label: 'WiFi' }, { icon: 'fa-snowflake', label: 'A/C' }, { icon: 'fa-fire', label: 'Heating' },
+                { icon: 'fa-tv', label: 'TV' }, { icon: 'fa-couch', label: 'Furnished' }, { icon: 'fa-wheelchair', label: 'Accessible' },
+                { icon: 'fa-paw', label: 'Pet Friendly' }, { icon: 'fa-utensils', label: 'Kitchen' }, { icon: 'fa-coffee', label: 'Coffee Maker' },
+                { icon: 'fa-wine-glass', label: 'Wine Bar' }, { icon: 'fa-door-open', label: 'Balcony' }, { icon: 'fa-elevator', label: 'Elevator' },
+                { icon: 'fa-home', label: 'Property' }, { icon: 'fa-tree', label: 'Garden' }, { icon: 'fa-sun', label: 'Solar' },
+                { icon: 'fa-swimming-pool', label: 'Pool' }, { icon: 'fa-hot-tub', label: 'Hot Tub' }, { icon: 'fa-cocktail', label: 'Swim-up Bar' },
+                { icon: 'fa-umbrella-beach', label: 'Beach Access' }, { icon: 'fa-water', label: 'Ocean View' }, { icon: 'fa-ship', label: 'Beach Club' },
+                { icon: 'fa-dumbbell', label: 'Gym' }, { icon: 'fa-volleyball-ball', label: 'Pickleball' }, { icon: 'fa-table-tennis', label: 'Tennis Court' },
+                { icon: 'fa-spa', label: 'Spa' }, { icon: 'fa-shield-alt', label: 'Security' }, { icon: 'fa-mountain', label: 'Mountain View' },
+                { icon: 'fa-bed', label: 'Bedrooms' }, { icon: 'fa-bath', label: 'Full Baths' }, { icon: 'fa-car', label: 'Garage' }
+            ];
+
+            const heroImageRef = useRef(null);
+            const logoRef = useRef(null);
+            const image1Ref = useRef(null);
+            const image2Ref = useRef(null);
+            const image3Ref = useRef(null);
+            const image4Ref = useRef(null);
+
+            useEffect(() => {
+                if (!propertyData.colorScheme) setPropertyData({ ...propertyData, colorScheme: { primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' } });
+            }, []);
+
+            useEffect(() => {
+                try {
+                    const saved = localStorage.getItem('flyer-presets');
+                    if (saved) setPresets(JSON.parse(saved));
+                } catch {}
+            }, []);
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+                    if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || ((e.ctrlKey || e.metaKey) && e.key === 'y')) { e.preventDefault(); redo(); }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); handlePrint(); }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); toggleCleanView(); }
+                    if (e.key === '?' && !e.ctrlKey && !e.metaKey) setShowShortcuts(true);
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [undo, redo]);
+
+            useEffect(() => {
+                if (propertyData.qrCodeUrl && propertyData.qrCodeUrl.trim()) {
+                    ['qr-code', 'qr-code-flyer'].forEach((id) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.innerHTML = '';
+                            try {
+                                new QRCode(el, { text: propertyData.qrCodeUrl, width: id === 'qr-code' ? 120 : 60, height: id === 'qr-code' ? 120 : 60, colorDark: propertyData.colorScheme.primary, colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+                            } catch {}
+                        }
+                    });
+                }
+            }, [propertyData.qrCodeUrl, propertyData.colorScheme.primary]);
+
+            const handleInputChange = (field, value) => setPropertyData({ ...propertyData, [field]: value });
+
+            const handleImageUpload = (field, event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) { alert('Please select a valid image file (JPG, PNG, or WebP)'); return; }
+                if (file.size > 10 * 1024 * 1024) { alert('File size too large. Max 10MB.'); return; }
+                const reader = new FileReader();
+                reader.onload = (e) => setPropertyData({ ...propertyData, [field]: e.target.result });
+                reader.readAsDataURL(file);
+            };
+
+            const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('drag-over'); };
+            const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('drag-over'); };
+            const handleDrop = (field) => (e) => {
+                e.preventDefault(); e.stopPropagation();
+                e.currentTarget.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setPropertyData({ ...propertyData, [field]: ev.target.result });
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const triggerFileInput = (ref) => { if (ref && ref.current) ref.current.click(); };
+            const addCustomFeature = (iconData) => { if (customFeatures.length < 10) setCustomFeatures([...customFeatures, iconData]); setShowIconSelector(false); };
+            const removeCustomFeature = (index) => setCustomFeatures(customFeatures.filter((_, i) => i !== index));
+            const openAmenityIconSelector = (index) => { setEditingAmenityIndex(index); setShowAmenityIconSelector(true); };
+            const changeAmenityIcon = (iconData) => {
+                const n = [...amenityIcons];
+                n[editingAmenityIndex] = { ...n[editingAmenityIndex], icon: iconData.icon, label: iconData.label };
+                setAmenityIcons(n);
+                setShowAmenityIconSelector(false);
+            };
+            const updateAmenityValue = (index, value) => {
+                const n = [...amenityIcons];
+                n[index].value = value;
+                setAmenityIcons(n);
+            };
+
+            const handlePrint = () => window.print();
+            const handleReset = () => { if (confirm('Reset all fields?')) { setPropertyData(initialData); } };
+            const toggleCleanView = () => setIsCleanView(!isCleanView);
+            const toggleSection = (section) => setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+
+            const savePreset = () => {
+                const name = prompt('Enter a name for this preset:');
+                if (name && name.trim()) {
+                    const newPresets = [...presets, { id: Date.now(), name: name.trim(), data: propertyData, timestamp: Date.now() }];
+                    setPresets(newPresets);
+                    localStorage.setItem('flyer-presets', JSON.stringify(newPresets));
+                }
+            };
+            const loadPreset = (preset) => { if (confirm(`Load preset "${preset.name}"?`)) setPropertyData(preset.data); };
+            const deletePreset = (id) => {
+                if (confirm('Delete this preset?')) {
+                    const n = presets.filter(p => p.id !== id);
+                    setPresets(n);
+                    localStorage.setItem('flyer-presets', JSON.stringify(n));
+                }
+            };
+
+            const downloadAsImage = async () => {
+                setIsCleanView(true);
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const canvas = await html2canvas(flyer, {
+                            scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false,
+                            onclone: (clonedDoc) => {
+                                const cf = clonedDoc.querySelector('.flyer-container');
+                                const inputs = cf.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none'; span.style.background = 'transparent';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                            }
+                        });
+                        const link = document.createElement('a');
+                        link.download = `property-flyer-${Date.now()}.png`;
+                        link.href = canvas.toDataURL('image/png', 1.0);
+                        link.click();
+                        setIsCleanView(false);
+                    } catch { alert('Export failed. Try Print to PDF.'); setIsCleanView(false); }
+                }, 100);
+            };
+
+            const downloadMultiFormat = async (format) => {
+                const formats = {
+                    instagram: { width: 1080, height: 1080, scale: 6, name: 'instagram-post', captureHeight: null },
+                    facebook: { width: 1200, height: 630, scale: 8, name: 'facebook-post', captureHeight: 850 },
+                    print: { width: 2550, height: 3300, scale: 4, name: 'print-flyer', captureHeight: null }
+                };
+                const spec = formats[format];
+                if (!spec) return;
+                setIsCleanView(true);
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const flyerRect = flyer.getBoundingClientRect();
+                        const canvas = await html2canvas(flyer, {
+                            scale: spec.scale, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false,
+                            width: flyerRect.width, height: spec.captureHeight || flyerRect.height, x: 0, y: 0,
+                            onclone: (clonedDoc) => {
+                                const cf = clonedDoc.querySelector('.flyer-container');
+                                const inputs = cf.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none'; span.style.background = 'transparent';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                            }
+                        });
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = spec.width; finalCanvas.height = spec.height;
+                        const ctx = finalCanvas.getContext('2d', { alpha: false });
+                        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, spec.width, spec.height);
+                        let drawWidth, drawHeight, offsetX, offsetY;
+                        if (format === 'facebook') {
+                            const sa = canvas.width / canvas.height, ta = spec.width / spec.height;
+                            if (sa > ta) { drawHeight = spec.height; drawWidth = drawHeight * sa; offsetX = -(drawWidth - spec.width) / 2; offsetY = 0; }
+                            else { drawWidth = spec.width; drawHeight = drawWidth / sa; offsetX = 0; offsetY = 0; }
+                        } else {
+                            const fs = Math.min(spec.width / canvas.width, spec.height / canvas.height);
+                            drawWidth = canvas.width * fs; drawHeight = canvas.height * fs;
+                            offsetX = (spec.width - drawWidth) / 2; offsetY = (spec.height - drawHeight) / 2;
+                        }
+                        ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
+                        const link = document.createElement('a');
+                        link.download = `${spec.name}-${Date.now()}.png`;
+                        link.href = finalCanvas.toDataURL('image/png', 1.0);
+                        link.click();
+                        setIsCleanView(false);
+                    } catch { alert('Export failed.'); setIsCleanView(false); }
+                }, 300);
+            };
+
+            const copyToClipboard = async () => {
+                setIsCleanView(true);
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const canvas = await html2canvas(flyer, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+                        canvas.toBlob(async (blob) => {
+                            try {
+                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                alert('Flyer copied to clipboard!');
+                            } catch { alert('Copy not supported. Use Download instead.'); }
+                            setIsCleanView(false);
+                        });
+                    } catch { alert('Copy failed.'); setIsCleanView(false); }
+                }, 100);
+            };
+
+            if (!propertyData.colorScheme) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh'}}><div style={{textAlign:'center'}}><i className="fas fa-spinner fa-spin" style={{fontSize:'48px'}}></i><p>Loading...</p></div></div>;
+
+            return (
+                <>
+                    {/* Autosave */}
+                    <div className={`autosave-indicator ${saveStatus}`}>
+                        {saveStatus === 'saving' && <><i className="fas fa-spinner fa-spin"></i><span>Saving...</span></>}
+                        {saveStatus === 'saved' && <><i className="fas fa-check"></i><span>All changes saved</span></>}
+                        {saveStatus === 'error' && <><i className="fas fa-exclamation-triangle"></i><span>Save failed</span></>}
+                    </div>
+
+                    {batchExporting && (
+                        <div className="batch-export-progress">
+                            <h3 className="text-lg font-bold mb-2">Exporting All Formats...</h3>
+                            <div className="progress-bar"><div className="progress-bar-fill" style={{width:`${batchProgress}%`}}></div></div>
+                            <p className="text-xs text-gray-500 mt-2 text-center">{Math.round(batchProgress)}%</p>
+                        </div>
+                    )}
+
+                    {showShortcuts && (
+                        <div className="shortcuts-modal" onClick={() => setShowShortcuts(false)}>
+                            <div className="shortcuts-content" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-xl font-bold mb-4">Keyboard Shortcuts</h3>
+                                {[['Undo','Ctrl/Cmd + Z'],['Redo','Ctrl/Cmd + Shift + Z'],['Print','Ctrl/Cmd + P'],['Toggle Preview','Ctrl/Cmd + E'],['Show Shortcuts','?']].map(([a,b]) => (
+                                    <div key={a} className="shortcut-item"><span>{a}</span><span className="shortcut-key">{b}</span></div>
+                                ))}
+                                <button className="btn btn-primary mt-4" onClick={() => setShowShortcuts(false)}>Close</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CONTROLS PANEL */}
+                    <div className="controls-panel">
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'15px'}}>
+                            <h3 className="text-sm font-bold text-gray-800">Flyer Controls</h3>
+                            <button onClick={() => setShowShortcuts(true)} style={{background:'none',border:'none',cursor:'pointer',fontSize:'16px',color:'#6b7280'}} title="Shortcuts"><i className="fas fa-keyboard"></i></button>
+                        </div>
+
+                        <div className="history-controls">
+                            <button className="btn history-btn" onClick={undo} disabled={!canUndo} style={{background:canUndo?'#6366f1':'#d1d5db',color:'white'}}><i className="fas fa-undo"></i><span>Undo</span></button>
+                            <button className="btn history-btn" onClick={redo} disabled={!canRedo} style={{background:canRedo?'#6366f1':'#d1d5db',color:'white'}}><i className="fas fa-redo"></i><span>Redo</span></button>
+                        </div>
+
+                        {/* Logo */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('logo')}>
+                                <div className="collapsible-header-title"><i className="fas fa-image"></i><span>Company Logo</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.logo ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.logo && (
+                                <div className="collapsible-content">
+                                    <div onClick={() => triggerFileInput(logoRef)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop('logo')} style={{cursor:'pointer',padding:'15px',background:'white',borderRadius:'6px',border:'2px dashed #d1d5db',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
+                                        {propertyData.logo ? (<><img src={propertyData.logo} alt="Logo" style={{maxHeight:'50px',maxWidth:'120px',objectFit:'contain'}} /><p className="text-xs text-gray-500">Click or drag to change</p></>) : (<><i className="fas fa-upload text-2xl text-gray-400"></i><p className="text-xs text-gray-500">Click or drag logo here</p></>)}
+                                    </div>
+                                    <input type="file" style={{display:'none'}} accept="image/*" onChange={(e) => handleImageUpload('logo', e)} ref={logoRef} />
+                                    <div style={{marginTop:'12px'}}>
+                                        <label style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}><span className="text-xs text-gray-600">Height: {propertyData.logoHeight}px</span></label>
+                                        <input type="range" min="15" max="200" value={propertyData.logoHeight} onChange={(e) => handleInputChange('logoHeight', parseInt(e.target.value))} style={{width:'100%',cursor:'pointer'}} />
+                                        <label style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}><span className="text-xs text-gray-600">Width: {propertyData.logoWidth}px</span></label>
+                                        <input type="range" min="40" max="440" value={propertyData.logoWidth} onChange={(e) => handleInputChange('logoWidth', parseInt(e.target.value))} style={{width:'100%',cursor:'pointer'}} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* QR Code */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('qr')}>
+                                <div className="collapsible-header-title"><i className="fas fa-qrcode"></i><span>QR Code</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.qr ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.qr && (
+                                <div className="collapsible-content">
+                                    <input type="text" className="edit-field text-xs" placeholder="Property URL" value={propertyData.qrCodeUrl} onChange={(e) => handleInputChange('qrCodeUrl', e.target.value)} style={{marginBottom:'10px',fontSize:'11px'}} />
+                                    <input type="text" className="edit-field text-xs" placeholder="QR Code Label" value={propertyData.qrCodeLabel} onChange={(e) => handleInputChange('qrCodeLabel', e.target.value)} style={{marginBottom:'10px',fontSize:'11px'}} />
+                                    {propertyData.qrCodeUrl && <div className="qr-code-container"><div id="qr-code"></div><p className="text-xs text-gray-500">Scan to view listing</p></div>}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Export */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('export')}>
+                                <div className="collapsible-header-title"><i className="fas fa-download"></i><span>Export Options</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.export ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.export && (
+                                <div className="collapsible-content">
+                                    <button className="btn btn-primary" onClick={handlePrint}><i className="fas fa-print mr-1"></i>Print</button>
+                                    <button className="btn btn-secondary" onClick={handlePrint}><i className="fas fa-file-pdf mr-1"></i>Save PDF</button>
+                                    <div style={{marginTop:'10px',paddingTop:'10px',borderTop:'1px solid #e5e7eb'}}>
+                                        <p className="text-xs font-semibold text-gray-700 mb-2">Quick Export</p>
+                                        <button className="btn" style={{background:'#8b5cf6',color:'white',fontSize:'11px',padding:'6px 10px'}} onClick={downloadAsImage}><i className="fas fa-image mr-1"></i>Download PNG</button>
+                                        <button className="btn" style={{background:'#06b6d4',color:'white',fontSize:'11px',padding:'6px 10px'}} onClick={copyToClipboard}><i className="fas fa-copy mr-1"></i>Copy to Clipboard</button>
+                                        <button className="btn" style={{background:'#10b981',color:'white',fontSize:'11px',padding:'6px 10px'}} onClick={toggleCleanView}><i className={`fas ${isCleanView ? 'fa-edit' : 'fa-eye'} mr-1`}></i>{isCleanView ? 'Show Editor' : 'Preview'}</button>
+                                    </div>
+                                    <div style={{marginTop:'10px',paddingTop:'10px',borderTop:'1px solid #e5e7eb'}}>
+                                        <p className="text-xs font-semibold text-gray-700 mb-2"><i className="fas fa-file-export mr-1"></i>Print Export</p>
+                                        <button className="btn" style={{background:'#7c3aed',color:'white',fontSize:'11px',padding:'6px 10px'}} onClick={() => downloadMultiFormat('print')}><i className="fas fa-print mr-1"></i>8.5×11 Print Size</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Colors */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('colors')}>
+                                <div className="collapsible-header-title"><i className="fas fa-palette"></i><span>Color Scheme</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.colors ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.colors && (
+                                <div className="collapsible-content">
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">Preset Colors</p>
+                                    <div className="color-preset-grid">
+                                        {colorPresets.map((preset, i) => (
+                                            <div key={i} className="color-preset-btn" onClick={() => applyColorPreset(preset)}>
+                                                <div className="color-preview-box" style={{background:`linear-gradient(135deg, ${preset.gradientStart} 0%, ${preset.gradientEnd} 100%)`}}></div>
+                                                <span className="color-preset-label">{preset.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{marginTop:'15px',paddingTop:'15px',borderTop:'1px solid #e5e7eb'}}>
+                                        <p className="text-xs font-semibold text-gray-700 mb-3">Custom Colors</p>
+                                        {[['primary','Primary (Footer/Icons)'],['secondary','Secondary (Accents)'],['gradientStart','Gradient Start'],['gradientEnd','Gradient End']].map(([key, label]) => (
+                                            <div key={key} className="color-input-group">
+                                                <label className="color-input-label">{label}</label>
+                                                <div className="color-input-wrapper">
+                                                    <input type="color" className="color-picker-input" value={propertyData.colorScheme[key]} onChange={(e) => updateColor(key, e.target.value)} />
+                                                    <input type="text" className="color-hex-input" value={propertyData.colorScheme[key]} onChange={(e) => updateColor(key, e.target.value)} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Presets */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('presets')}>
+                                <div className="collapsible-header-title"><i className="fas fa-save"></i><span>Templates ({presets.length})</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.presets ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.presets && (
+                                <div className="collapsible-content">
+                                    <button className="btn btn-secondary" onClick={savePreset} style={{marginBottom:'10px'}}><i className="fas fa-plus mr-1"></i>Save as Template</button>
+                                    {presets.length > 0 ? presets.map(preset => (
+                                        <div key={preset.id} className="preset-item">
+                                            <span className="font-semibold">{preset.name}</span>
+                                            <div className="preset-actions">
+                                                <button className="preset-btn" onClick={() => loadPreset(preset)} title="Load"><i className="fas fa-upload text-blue-600"></i></button>
+                                                <button className="preset-btn" onClick={() => deletePreset(preset.id)} title="Delete"><i className="fas fa-trash text-red-600"></i></button>
+                                            </div>
+                                        </div>
+                                    )) : <p className="text-xs text-gray-500 text-center py-2">No saved templates</p>}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Features */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('features')}>
+                                <div className="collapsible-header-title"><i className="fas fa-th"></i><span>Features ({customFeatures.length}/10)</span></div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.features ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.features && (
+                                <div className="collapsible-content">
+                                    <div className="feature-icon-grid">
+                                        {customFeatures.map((feature, index) => (
+                                            <div key={index} className="feature-icon-item">
+                                                <button className="remove-icon-btn" onClick={() => removeCustomFeature(index)}><i className="fas fa-times"></i></button>
+                                                <div className="feature-icon-display"><i className={`fas ${feature.icon}`}></i></div>
+                                                <div className="feature-icon-label">{feature.label}</div>
+                                            </div>
+                                        ))}
+                                        {customFeatures.length < 10 && (
+                                            <div className="feature-icon-item add-icon" onClick={() => setShowIconSelector(true)}>
+                                                <div className="feature-icon-display"><i className="fas fa-plus"></i></div>
+                                                <div className="feature-icon-label">Add</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="btn" style={{background:'#ef4444',color:'white',marginTop:'10px'}} onClick={handleReset}><i className="fas fa-redo mr-1"></i>Reset All</button>
+
+                        <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-gray-600">
+                            <p className="font-semibold mb-1">💡 Tips:</p>
+                            <ul className="list-disc pl-3 space-y-0.5">
+                                <li>Press ? for all shortcuts</li>
+                                <li>Auto-saves every 2 sec</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Icon Modals */}
+                    {showIconSelector && (
+                        <div className="icon-selector-modal" onClick={() => setShowIconSelector(false)}>
+                            <div className="icon-selector-content" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-lg font-bold mb-4">Select a Feature</h3>
+                                {availableIcons.map((iconData, i) => (
+                                    <div key={i} className="icon-option" onClick={() => addCustomFeature(iconData)}>
+                                        <i className={`fas ${iconData.icon}`}></i><span>{iconData.label}</span>
+                                    </div>
+                                ))}
+                                <button className="btn btn-primary mt-4" onClick={() => setShowIconSelector(false)}>Close</button>
+                            </div>
+                        </div>
+                    )}
+                    {showAmenityIconSelector && (
+                        <div className="icon-selector-modal" onClick={() => setShowAmenityIconSelector(false)}>
+                            <div className="icon-selector-content" onClick={e => e.stopPropagation()}>
+                                <h3 className="text-lg font-bold mb-4">Change Amenity Icon</h3>
+                                {availableIcons.map((iconData, i) => (
+                                    <div key={i} className="icon-option" onClick={() => changeAmenityIcon(iconData)}>
+                                        <i className={`fas ${iconData.icon}`}></i><span>{iconData.label}</span>
+                                    </div>
+                                ))}
+                                <button className="btn btn-primary mt-4" onClick={() => setShowAmenityIconSelector(false)}>Close</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ===== FLYER ===== */}
+                    <div ref={flyerRef} className={`flyer-container ${isCleanView ? 'clean-view' : ''}`}>
+                        
+                        {/* Hero Section */}
+                        <div style={{position:'relative',width:'100%',height:'500px',overflow:'hidden'}}>
+                            <div className="image-upload-btn" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',cursor:'pointer',zIndex:1}}
+                                onClick={() => triggerFileInput(heroImageRef)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop('heroImage')}>
+                                {propertyData.heroImage ? (
+                                    <img src={propertyData.heroImage} alt="Property" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                                ) : (
+                                    <div style={{width:'100%',height:'100%',background:`linear-gradient(135deg, ${propertyData.colorScheme.gradientStart} 0%, ${propertyData.colorScheme.gradientEnd} 100%)`,display:'flex',alignItems:'center',justifyContent:'center',color:'white'}}>
+                                        <div className="text-center">
+                                            <i className="fas fa-camera text-6xl mb-4 opacity-50"></i>
+                                            <p className="text-xl">Click or Drag Hero Image</p>
+                                            <p className="text-sm opacity-75 mt-2">JPG, PNG, or WebP (max 10MB)</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <input type="file" style={{display:'none'}} accept="image/*" onChange={(e) => handleImageUpload('heroImage', e)} ref={heroImageRef} />
+                                {propertyData.heroImage && <div className="upload-overlay"><div className="text-white text-center"><i className="fas fa-camera text-4xl mb-2"></i><p>Change Image</p></div></div>}
+                            </div>
+
+                            {/* Gradient overlay */}
+                            <div style={{position:'absolute',bottom:0,left:0,width:'100%',height:'180px',background:`linear-gradient(to top, ${propertyData.colorScheme.primary}f9 0%, ${propertyData.colorScheme.primary}f2 35%, ${propertyData.colorScheme.primary}b3 65%, transparent 100%)`,zIndex:5}}>
+                                {propertyData.logo && (
+                                    <div style={{position:'absolute',top:'12px',left:'0',background:'white',padding:'2px 6px',borderRadius:'0 0 8px 0',boxShadow:'0 2px 8px rgba(0,0,0,0.2)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10}}>
+                                        <img src={propertyData.logo} alt="Logo" style={{height:`${propertyData.logoHeight}px`,width:`${propertyData.logoWidth}px`,objectFit:'contain'}} />
+                                    </div>
+                                )}
+                                <div style={{position:'absolute',bottom:'18px',left:'30px',color:'white',maxWidth:'50%'}}>
+                                    <div className="edit-field edit-field-white" contentEditable={!isCleanView} onBlur={(e) => handleInputChange('address', e.currentTarget.textContent)} suppressContentEditableWarning={true} style={{fontSize:'32px',fontWeight:'bold',color:'white',background:'transparent',border:'none',lineHeight:'1.1',marginBottom:'6px',outline:'none',fontFamily:'system-ui,sans-serif'}}>{propertyData.address}</div>
+                                    <div style={{display:'flex',alignItems:'baseline',gap:'8px'}}>
+                                        <div style={{fontSize:'10px',opacity:0.9,textTransform:'uppercase',letterSpacing:'0.5px'}}>MLS</div>
+                                        <div className="edit-field edit-field-white" contentEditable={!isCleanView} onBlur={(e) => handleInputChange('mls', e.currentTarget.textContent)} suppressContentEditableWarning={true} style={{fontSize:'16px',fontWeight:'600',color:'white',background:'transparent',border:'none',outline:'none',display:'inline-block',fontFamily:'system-ui,sans-serif'}}>{propertyData.mls}</div>
+                                    </div>
+                                </div>
+                                <div style={{position:'absolute',bottom:'18px',right:'30px',color:'white',textAlign:'right'}}>
+                                    <div style={{marginBottom:'8px',display:'flex',alignItems:'baseline',justifyContent:'flex-end',gap:'10px'}}>
+                                        <div style={{fontSize:'28px',opacity:0.9,textTransform:'uppercase',letterSpacing:'0.5px',fontWeight:'bold',fontFamily:'system-ui,sans-serif'}}>USD</div>
+                                        <div style={{display:'flex',alignItems:'center'}}>
+                                            <span style={{fontSize:'28px',fontWeight:'bold',marginRight:'6px',fontFamily:'system-ui,sans-serif'}}>$</span>
+                                            <div className="edit-field edit-field-white" contentEditable={!isCleanView} onBlur={(e) => handleInputChange('priceUSD', e.currentTarget.textContent)} suppressContentEditableWarning={true} style={{fontSize:'28px',fontWeight:'bold',textAlign:'right',color:'white',minWidth:'170px',maxWidth:'250px',background:'transparent',border:'none',fontFamily:'system-ui,sans-serif',outline:'none',display:'inline-block'}}>{propertyData.priceUSD}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{marginBottom:'8px',display:'flex',alignItems:'baseline',justifyContent:'flex-end',gap:'10px'}}>
+                                        <select className="currency-dropdown" value={propertyData.selectedCurrency} onChange={(e) => handleInputChange('selectedCurrency', e.target.value)} disabled={isCleanView}>
+                                            <option value="MXN">MXN</option>
+                                            <option value="CAD">CAD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="JPY">JPY</option>
+                                            <option value="AUD">AUD</option>
+                                            <option value="CHF">CHF</option>
+                                            <option value="CNY">CNY</option>
+                                        </select>
+                                        <div style={{display:'flex',alignItems:'center'}}>
+                                            <span style={{fontSize:'14px',marginRight:'4px',fontFamily:'system-ui,sans-serif'}}>{currencyInfo.symbol}</span>
+                                            <div className="converted-price-display">{convertedPrice}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{width:'60%',height:'1px',background:'rgba(255,255,255,0.3)',marginBottom:'8px',marginTop:'4px',marginLeft:'auto'}}></div>
+                                    <div style={{display:'flex',gap:'18px',fontSize:'13px',justifyContent:'flex-end',alignItems:'flex-end'}}>
+                                        <div style={{textAlign:'right'}}>
+                                            <div style={{opacity:0.8,fontSize:'9px',marginBottom:'2px',textTransform:'uppercase',letterSpacing:'0.5px'}}>Size</div>
+                                            <div style={{display:'flex',alignItems:'baseline',justifyContent:'flex-end'}}>
+                                                <input type="text" className="edit-field edit-field-white" style={{fontWeight:'600',fontSize:'13px',width:'60px',textAlign:'right',color:'white',background:'transparent',border:'none'}} value={propertyData.size} onChange={(e) => handleInputChange('size', e.target.value)} />
+                                                <span style={{marginLeft:'4px',fontSize:'10px',opacity:0.9}}>SQFT</span>
+                                            </div>
+                                        </div>
+                                        <div style={{textAlign:'right'}}>
+                                            <div style={{opacity:0.8,fontSize:'9px',marginBottom:'2px',textTransform:'uppercase',letterSpacing:'0.5px'}}>Year Built</div>
+                                            <input type="text" className="edit-field edit-field-white" style={{fontWeight:'600',fontSize:'13px',width:'50px',textAlign:'right',color:'white',background:'transparent',border:'none'}} value={propertyData.yearBuilt} onChange={(e) => handleInputChange('yearBuilt', e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="content-section">
+                            <div style={{display:'flex',gap:'16px',width:'100%',maxWidth:'100%'}}>
+                                <div style={{flex:'0 0 66%',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                                    {[1,2,3,4].map(num => (
+                                        <div key={num} style={{minWidth:0}}>
+                                            <div className="image-upload-btn" style={{height:'185px',borderRadius:'8px',overflow:'hidden',cursor:'pointer'}}
+                                                onClick={() => triggerFileInput(eval(`image${num}Ref`))} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop(`image${num}`)}>
+                                                {propertyData[`image${num}`] ? (
+                                                    <img src={propertyData[`image${num}`]} className="interior-image" alt={`Interior ${num}`} />
+                                                ) : (
+                                                    <div className="interior-image" style={{display:'flex',alignItems:'center',justifyContent:'center',background:'#f3f4f6',height:'185px'}}>
+                                                        <div className="text-center text-gray-400"><i className="fas fa-camera text-2xl mb-2"></i><p className="text-xs">Drop or Click</p></div>
+                                                    </div>
+                                                )}
+                                                <input type="file" style={{display:'none'}} accept="image/*" onChange={(e) => handleImageUpload(`image${num}`, e)} ref={eval(`image${num}Ref`)} />
+                                                {propertyData[`image${num}`] && <div className="upload-overlay"><div className="text-white text-center"><i className="fas fa-camera text-xl"></i></div></div>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{flex:'0 0 34%',minWidth:0,overflow:'hidden'}}>
+                                    <div className="unit-overview-section" style={{height:'382px',display:'flex',flexDirection:'column',width:'100%',maxWidth:'100%'}}>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Unit Overview</h3>
+                                        <div className="edit-field edit-field-dark text-xs leading-relaxed flex-1" contentEditable={!isCleanView}
+                                            onBlur={(e) => { const text = e.currentTarget.textContent; handleInputChange('overview', text.length <= 350 ? text : text.substring(0, 350)); }}
+                                            suppressContentEditableWarning={true}
+                                            style={{whiteSpace:'pre-wrap',wordWrap:'break-word',overflowWrap:'break-word',width:'100%',maxWidth:'100%',boxSizing:'border-box',overflow:'hidden',lineHeight:'1.5',padding:'8px'}}>
+                                            {propertyData.overview}
+                                        </div>
+                                        <div className="character-counter" style={{fontSize:'9px',color:'#9ca3af',marginTop:'4px',textAlign:'right'}}>{propertyData.overview.length}/350</div>
+                                        <div className="mt-2 text-right">
+                                            <input type="text" className="edit-field edit-field-dark text-xs text-gray-500 text-right" value={propertyData.location} onChange={(e) => handleInputChange('location', e.target.value)} placeholder="Location" style={{width:'100%',maxWidth:'100%',boxSizing:'border-box'}} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Amenities */}
+                            <div className="amenities-section">
+                                {amenityIcons.map((amenity, index) => (
+                                    <div key={index} className="amenity-item" style={{position:'relative'}}>
+                                        <button className="remove-icon-btn" onClick={() => openAmenityIconSelector(index)} title="Change icon"><i className="fas fa-sync-alt" style={{fontSize:'10px'}}></i></button>
+                                        <div className="amenity-icon" style={{color:propertyData.colorScheme.primary}}><i className={`fas ${amenity.icon}`}></i></div>
+                                        <input type="text" className="edit-field edit-field-dark amenity-value text-center" style={{width:'40px',margin:'0 auto',fontSize:'22px',color:propertyData.colorScheme.primary}} value={amenity.value} onChange={(e) => updateAmenityValue(index, e.target.value)} />
+                                        <div className="amenity-name">{amenity.label}</div>
+                                    </div>
+                                ))}
+                                {propertyData.qrCodeUrl && (
+                                    <div className="amenity-item" style={{position:'relative'}}>
+                                        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                                            <div id="qr-code-flyer" style={{display:'flex',justifyContent:'center',alignItems:'center',marginBottom:'3px'}}></div>
+                                            <div className="amenity-label">{propertyData.qrCodeLabel}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="footer-note" style={{background:propertyData.colorScheme.primary}}>
+                            *Property prices are displayed in USD currency. Exchange rates are approximate and subject to change.
+                        </div>
+                    </div>
+                </>
+            );
+        }
+
+        ReactDOM.render(<PropertyFlyerEditor />, document.getElementById('root'));
+    </script>
+</body>
+</html>
