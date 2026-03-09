@@ -33,7 +33,7 @@
         .hero-image-section {
             position: relative;
             height: 500px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         }
 
         .logo img { height: 48px; }
@@ -67,7 +67,7 @@
         .amenity-name { font-size: 8px; color: #9ca3af; margin-top: 4px; text-transform: none; letter-spacing: 0; }
 
         .footer-note {
-            background: #1e3a8a;
+            background: #1d4ed8;
             color: white;
             padding: 10px 20px;
             font-size: 9px;
@@ -340,7 +340,7 @@
                 image4: null,
                 qrCodeUrl: '',
                 qrCodeLabel: 'Scan Listing',
-                colorScheme: { primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' }
+                colorScheme: { primary: '#1d4ed8', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1d4ed8' }
             };
 
             const loadAutoSave = () => {
@@ -380,7 +380,7 @@
             const saveStatus = useAutoSave(propertyData);
 
             const colorPresets = [
-                { name: 'Blue', primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' },
+                { name: 'Blue', primary: '#1d4ed8', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1d4ed8' },
                 { name: 'Red', primary: '#991b1b', secondary: '#dc2626', gradientStart: '#ef4444', gradientEnd: '#dc2626' },
                 { name: 'Green', primary: '#065f46', secondary: '#059669', gradientStart: '#10b981', gradientEnd: '#059669' },
                 { name: 'Orange', primary: '#9a3412', secondary: '#ea580c', gradientStart: '#f97316', gradientEnd: '#ea580c' },
@@ -924,6 +924,13 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Wave shape */}
+                            <div style={{position:'absolute',bottom:-1,left:0,width:'100%',zIndex:10,lineHeight:0}}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 70" preserveAspectRatio="none" style={{display:'block',width:'100%',height:'70px'}}>
+                                    <path d="M0,35 C200,70 400,0 600,28 C800,56 1000,10 1200,35 C1320,50 1380,42 1440,38 L1440,70 L0,70 Z" fill="white"/>
+                                </svg>
                             </div>
 
                         </div>
